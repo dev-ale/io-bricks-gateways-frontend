@@ -10,6 +10,7 @@ export default {
   methods: {
     publish1 () {
       this.$mqtt.publish('VueMqtt/publish1', 'message to Sub1')
+      console.log('pub')
     },
     publish2 () {
       this.$mqtt.publish('VueMqtt/publish2', 'message to Sub2')
