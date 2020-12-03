@@ -19,7 +19,7 @@
                   </div>
                   <p v-if="!gateway.loading" style="font-size: x-large">Connected Devices:</p>
                   <p v-if="gateway.loading"style="font-size: x-large">Scanning for new Devices</p>
-                  <ul v-for="device in gateway.connectedDevices" :key="device">
+                  <ul v-if="!gateway.loading" v-for="device in gateway.connectedDevices" :key="device">
                     <li style="font-size: large">{{ device }}</li>
                   </ul>
                 </div>
@@ -44,20 +44,8 @@ export default {
     return {
       client: null,
       brokerOnline: false,
-      gateways: [
-        {
-          name: 'Gateway-001',
-          online: true,
-          loading: false,
-          connectedDevices: ['Brickli 0000-0005']
-        },
-        {
-          name: 'Gateway-002',
-          online: true,
-          loading: false,
-          connectedDevices: ['Brickli 0000-0001', 'Brickli 0000-0002', 'Brickli 0000-0004', 'Brickli 0000-0005']
-        }
-      ]
+      gateways: [],
+      loading: false
     }
   },
   created () {
@@ -102,7 +90,7 @@ export default {
           console.log(this.gateways)
         }
         // if online --> update values
-        if(obj.online === true) {
+        else if(obj.online === true) {
           console.log("matched and updatet gateway: " + obj.name)
           let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
           this.$set(this.gateways, foundIndex, obj)
@@ -137,11 +125,11 @@ export default {
       let name = gateway.name
       let time = new Date().toJSON().substring(10,19).replace('T',' ');
       this.publish(time,'gateways/' + name + '/scan')
-      //gateway.loading = true
-      gateway.connectedDevices = []
+      gateway.loading = true
+      //gateway.connectedDevices = []
       setTimeout(() => {
         gateway.loading = false
-      }, 3000)
+      }, 5000)
     }
   },
 }
