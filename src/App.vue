@@ -2,10 +2,10 @@
   <div>
     <nav class="blue-grey">
       <div class="nav-wrapper">
-        <a href="#" class="brand-logo center">iot bricks ble - gateways</a>
+        <a href="#" class="brand-logo center">iot bricks ble - gateways<span v-if="!brokerOnline" class="badge red black-text">Offline</span></a>
       </div>
     </nav>
-    <button @click="sendMessage('Hallo')">test Message</button>
+
     <div id="app">
         <div class="row">
           <div class="col s12 m6 offset-m3">
@@ -39,6 +39,7 @@ export default {
   data () {
     return {
       client: null,
+      brokerOnline: false,
       gateways: [
         {
           name: 'Gateway-001',
@@ -58,76 +59,72 @@ export default {
     this.client = new Paho.MQTT.Client('mqtt.brick.li', 9001, 'clientId')
 
 // set callback handlers
-    this.client.onConnectionLost = onConnectionLost;
-    this.client.onMessageArrived = onMessageArrived;
+    this.client.onConnectionLost = this.onConnectionLost;
+    this.client.onMessageArrived = this.onMessageArrived;
 
 // connect the client
     this.client.connect ({onSuccess:this.onConnect});
 
-
-// called when the client connects
-    function onConnect () {
-      // Once a connection has been made, make a subscription and send a message.
-      console.log('connected')
-    }
-
-// called when the client loses its connection
-    function onConnectionLost (responseObject) {
-      if (responseObject.errorCode !== 0) {
-        console.log('onConnectionLost:' + responseObject.errorMessage)
-      }
-    }
-
-// called when a message arrives
-    function onMessageArrived (message) {
-      if (message.destinationName.startsWith("gateways/Gateway-001/scan")) {
-        console.log(message.destinationName)
-        console.log('scan durchgeführt')
-        console.log(message.payloadString)
-
-      }
-      if (message.destinationName.startsWith("gateways/Gateway-001/state")) {
-        console.log('neuer state')
-        //console.log(message.destinationName)
-        //console.log(message.payloadString)
-        let obj = JSON.parse(message.payloadString)
-        console.log(obj)
-      }
-
-
-
-    }
   },
   methods: {
-    checkMessage(brickliId) {
-      if (message.destinationName === 'devices/' + brickliId) {
-        console.log('nachricht für ' + brickliId)
+    // called when the client loses its connection
+    onConnectionLost (responseObject) {
+      if (responseObject.errorCode !== 0) {
+      console.log('onConnectionLost:' + responseObject.errorMessage)
       }
     },
+
+    // called when a message arrives
+    onMessageArrived (message) {
+    if (message.destinationName.startsWith("gateways/Gateway-001/scan")) {
+      //console.log(message.destinationName)
+      //console.log('scan durchgeführt')
+      //console.log(message.payloadString)
+    }
+    if (message.destinationName.endsWith("/state")) {
+      console.log('neuer state')
+      //console.log(message.destinationName)
+      //console.log(message.payloadString)
+      let obj = JSON.parse(message.payloadString)
+      console.log(obj)
+      if(this.gateways.some(gateway => gateway.name === obj.name)) {
+        let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
+        console.log(foundIndex)
+        this.gateways[foundIndex] = obj;
+        console.log("matched and updatet gateway: " + obj.name)
+      }else {
+        this.gateways.push(obj)
+      }
+     //this.gateways[0] = obj
+      //this.gateways[0].loading = false
+    }
+  },
+
     onConnect () {
+      console.log('ONCONNECT ausgeführt')
       this.client.subscribe('devices/#')
       this.client.subscribe('gateways/#')
+      this.brokerOnline = true
     },
     subscribe (topic) {
+      console.log('SUBSCRIBE auf: ' + topic)
       console.log('subscribed to ' + topic)
     },
     publish (message, topic) {
+      console.log('PUBLISH auf: ' + topic + ' Message: ' + message)
       let msg = new Paho.MQTT.Message(message);
       msg.destinationName = topic;
       this.client.send(msg);
     },
     scan (gateway) {
+      console.log('SCAN ausgeführt')
       let name = gateway.name
       let time = new Date().toJSON().substring(10,19).replace('T',' ');
       this.publish(time,'gateways/' + name + '/scan')
-      gateway.loading = true
+      //gateway.loading = true
       gateway.connectedDevices = []
       setTimeout(() => {
         gateway.loading = false
-        /*
-        gateway.connectedDevices = [
-          'Brickli 0000-0001', 'Brickli 0000-0002', 'Brickli 0000-0004'
-        ] */
       }, 3000)
     }
   },
