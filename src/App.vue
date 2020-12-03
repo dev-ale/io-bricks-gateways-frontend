@@ -5,9 +5,8 @@
         <a href="#" class="brand-logo center">iot bricks ble - gateways</a>
       </div>
     </nav>
-    <div id="app" style="align-content: center">
-
-      <div style="align-content: center">
+    <button @click="sendMessage('Hallo')">test Message</button>
+    <div id="app">
         <div class="row">
           <div class="col s12 m6 offset-m3">
             <div v-for="gateway in gateways" :key="gateway.name" class="card blue-grey darken-1 hoverable">
@@ -30,19 +29,16 @@
         </div>
       </div>
     </div>
-  </div>
 
 </template>
 
 <script>
-import Publish from './components/Publish'
-import Sub1 from './components/Sub1'
-import Sub2 from './components/Sub2'
-import Sub3 from './components/Sub3'
+
 export default {
   name: 'app',
   data () {
     return {
+      client: null,
       gateways: [
         {
           name: 'Gateway-001',
@@ -57,24 +53,86 @@ export default {
       ]
     }
   },
-  components: {
-    Publish, Sub1, Sub2, Sub3
+  created () {
+// Create a client instance
+    this.client = new Paho.MQTT.Client('mqtt.brick.li', 9001, 'clientId')
+
+// set callback handlers
+    this.client.onConnectionLost = onConnectionLost;
+    this.client.onMessageArrived = onMessageArrived;
+
+// connect the client
+    this.client.connect ({onSuccess:this.onConnect});
+
+
+// called when the client connects
+    function onConnect () {
+      // Once a connection has been made, make a subscription and send a message.
+      console.log('connected')
+    }
+
+// called when the client loses its connection
+    function onConnectionLost (responseObject) {
+      if (responseObject.errorCode !== 0) {
+        console.log('onConnectionLost:' + responseObject.errorMessage)
+      }
+    }
+
+// called when a message arrives
+    function onMessageArrived (message) {
+      if (message.destinationName.startsWith("gateways/Gateway-001/scan")) {
+        console.log(message.destinationName)
+        console.log('scan durchgeführt')
+        console.log(message.payloadString)
+
+      }
+      if (message.destinationName.startsWith("gateways/Gateway-001/state")) {
+        console.log('neuer state')
+        //console.log(message.destinationName)
+        //console.log(message.payloadString)
+        let obj = JSON.parse(message.payloadString)
+        console.log(obj)
+      }
+
+
+
+    }
   },
   methods: {
+    checkMessage(brickliId) {
+      if (message.destinationName === 'devices/' + brickliId) {
+        console.log('nachricht für ' + brickliId)
+      }
+    },
+    onConnect () {
+      this.client.subscribe('devices/#')
+      this.client.subscribe('gateways/#')
+    },
+    subscribe (topic) {
+      console.log('subscribed to ' + topic)
+    },
+    publish (message, topic) {
+      let msg = new Paho.MQTT.Message(message);
+      msg.destinationName = topic;
+      this.client.send(msg);
+    },
     scan (gateway) {
-      console.log('scan')
+      let name = gateway.name
+      let time = new Date().toJSON().substring(10,19).replace('T',' ');
+      this.publish(time,'gateways/' + name + '/scan')
       gateway.loading = true
       gateway.connectedDevices = []
       setTimeout(() => {
         gateway.loading = false
+        /*
         gateway.connectedDevices = [
           'Brickli 0000-0001', 'Brickli 0000-0002', 'Brickli 0000-0004'
-        ]
+        ] */
       }, 3000)
     }
   },
   mounted () {
-    this.$mqtt.subscribe('VueMqtt/#')
+
   }
 }
 </script>

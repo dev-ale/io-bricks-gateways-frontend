@@ -11,6 +11,7 @@
     "lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
+    "paho-mqtt": "^1.1.0",
     "vue": "^2.6.10",
     "vue-mqtt": "^2.0.3"
   },
