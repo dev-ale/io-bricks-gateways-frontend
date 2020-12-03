@@ -44,8 +44,7 @@ export default {
     return {
       client: null,
       brokerOnline: false,
-      gateways: [],
-      loading: false
+      gateways: []
     }
   },
   created () {
@@ -70,12 +69,12 @@ export default {
 
     // called when a message arrives
     onMessageArrived (message) {
-    if (message.destinationName.startsWith("gateways/Gateway-001/scan")) {
+    if (message.destinationName.endsWith("/scan")) {
       //console.log(message.destinationName)
-      //console.log('scan durchgeführt')
       //console.log(message.payloadString)
     }
     if (message.destinationName.endsWith("/state")) {
+
       console.log('neuer state')
       let obj = JSON.parse(message.payloadString)
       console.log(obj)
@@ -90,17 +89,24 @@ export default {
           console.log(this.gateways)
         }
         // if online --> update values
-        else if(obj.online === true) {
+        else {
           console.log("matched and updatet gateway: " + obj.name)
           let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
           this.$set(this.gateways, foundIndex, obj)
+
         }
 
       // if gateway not in list --> add it
       }else {
         console.log("new gateway: " + obj.name)
+        let j = this.gateways.findIndex(gateway => gateway.name === obj.name);
         this.gateways.push(obj)
+        this.gateways[j+1].loading = false;
+        //this.$set(this.gateways, this.gateways.length + 1, obj)
       }
+    }
+    else {
+
     }
   },
 
