@@ -20,7 +20,7 @@
                   <p v-if="!gateway.loading" style="font-size: x-large">Connected Devices:</p>
                   <p v-if="gateway.loading"style="font-size: x-large">Scanning for new Devices</p>
                   <ul v-if="!gateway.loading" v-for="device in gateway.connectedDevices" :key="device">
-                    <li style="font-size: large">{{ device }}</li>
+                    <li style="font-size: large">Brickli {{ device }}</li>
                   </ul>
                 </div>
                 <div class="card-action">
@@ -92,16 +92,18 @@ export default {
         else {
           console.log("matched and updatet gateway: " + obj.name)
           let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
+          obj.loading = false
           this.$set(this.gateways, foundIndex, obj)
-
+          //this.gateways[foundIndex+1].loading = false;
         }
 
       // if gateway not in list --> add it
       }else {
         console.log("new gateway: " + obj.name)
         let j = this.gateways.findIndex(gateway => gateway.name === obj.name);
+        obj.loading = false
         this.gateways.push(obj)
-        this.gateways[j+1].loading = false;
+        //this.gateways[j+1].loading = false;
         //this.$set(this.gateways, this.gateways.length + 1, obj)
       }
     }
@@ -132,10 +134,9 @@ export default {
       let time = new Date().toJSON().substring(10,19).replace('T',' ');
       this.publish(time,'gateways/' + name + '/scan')
       gateway.loading = true
-      //gateway.connectedDevices = []
       setTimeout(() => {
         gateway.loading = false
-      }, 5000)
+      }, 8000)
     }
   },
 }
