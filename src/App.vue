@@ -43,11 +43,13 @@ export default {
       gateways: [
         {
           name: 'Gateway-001',
+          online: true,
           loading: false,
           connectedDevices: ['Brickli 0000-0005']
         },
         {
           name: 'Gateway-002',
+          online: true,
           loading: false,
           connectedDevices: ['Brickli 0000-0001', 'Brickli 0000-0002', 'Brickli 0000-0004', 'Brickli 0000-0005']
         }
@@ -83,20 +85,29 @@ export default {
     }
     if (message.destinationName.endsWith("/state")) {
       console.log('neuer state')
-      //console.log(message.destinationName)
-      //console.log(message.payloadString)
       let obj = JSON.parse(message.payloadString)
       console.log(obj)
+
       if(this.gateways.some(gateway => gateway.name === obj.name)) {
-        let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
-        console.log(foundIndex)
-        this.gateways[foundIndex] = obj;
-        console.log("matched and updatet gateway: " + obj.name)
+
+        // Check if online --> remove gateway
+        if (obj.online === false) {
+          console.log('offline called')
+          let i = this.gateways.findIndex(gateway => gateway.name === obj.name);
+          this.gateways.splice(i, 1);
+        }
+        // if online --> update values
+        if(obj.online === true) {
+          console.log("matched and updatet gateway: " + obj.name)
+          let foundIndex = this.gateways.findIndex(gateway => gateway.name === obj.name);
+          this.$set(this.gateways, foundIndex, obj)
+        }
+
+      // if gateway not in list --> add it
       }else {
+        console.log("new gateway: " + obj.name)
         this.gateways.push(obj)
       }
-     //this.gateways[0] = obj
-      //this.gateways[0].loading = false
     }
   },
 
@@ -128,9 +139,6 @@ export default {
       }, 3000)
     }
   },
-  mounted () {
-
-  }
 }
 </script>
 
